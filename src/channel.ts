@@ -47,7 +47,7 @@ import {
   SearchMessageSortBase,
 } from './types';
 import { Role } from './permissions';
-
+import merge from 'lodash/merge';
 /**
  * Channel - The Channel class manages it's own state.
  */
@@ -1608,9 +1608,24 @@ export class Channel<
         channelState.unreadCount = 0;
         break;
       case 'member.added':
+        if (event.member?.user_id) {
+          this.queryMembers(
+            { id: event.member.user_id } as UserFilters<UserType>,
+            {},
+            {},
+          ).then(({ members }) => {
+            if (event.member?.user_id && event.member?.user_id === members[0].user_id) {
+              channelState.members[event.member.user_id as string] = members[0];
+            }
+          });
+        }
+        break;
       case 'member.updated':
         if (event.member?.user_id) {
-          channelState.members[event.member.user_id] = event.member;
+          channelState.members[event.member.user_id] = merge(
+            channelState.members[event.member.user_id],
+            event.member,
+          );
         }
         break;
       case 'member.removed':
